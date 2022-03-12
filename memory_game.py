@@ -1,11 +1,11 @@
 
 import logging
-import os
 import random
 
 logging.basicConfig()
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
+
 
 def main():
     memory_game()
@@ -37,40 +37,60 @@ def memory_game():
     fixed_cards = empty_board
     logger.debug(game_board)
     players = {player_one: 0, player_two: 0}
-    play_game(game_board, players, fixed_cards)
+    play_game(game_board, player_one, players, fixed_cards)
 
 
-def play_game(board, players, fixed_cards):
-    for name, points in players.items():
-        print_player_info(name, points)
+def play_game(board, cur_player_name, players, fixed_cards):
+    print('\n' * 150)
+    print('Name: Points')
+    print_players_info(list(players.items()))
     print_board(board, fixed_cards)
-    for name, points in players.items():
-        players, new_fixed_cards = play_turn(board, fixed_cards, players, name)
-    play_game(board, players, new_fixed_cards)
+    if game_is_over(fixed_cards):
+        winner = get_winner(players)
+        print(f'Player {winner[0]} won with {winner[1]} matches!')
+        return
+    players, new_fixed_cards, matched = play_turn(board, fixed_cards, players, cur_player_name)
+    if matched:
+        play_game(board, cur_player_name, players, new_fixed_cards)
+    else:
+        opponent_player_name = list(get_opponent_player(players, cur_player_name).keys())[0]
+        play_game(board, opponent_player_name, players, new_fixed_cards)
 
-
-def play_turn(board, fixed_cards, players, name):
-    print(f'player {name}, flip two cards that are facing down.')
+def play_turn(board, fixed_cards, players, cur_player_name):
+    print(f'player {cur_player_name}, flip two cards that are facing down.')
     card_one_row, card_one_column = select_card(board, fixed_cards)
-    temp_fixed_cards = update_board(fixed_cards, card_one_row, card_one_column, True)
-    print_board(board, temp_fixed_cards)
-    card_two_row, card_two_column = select_card(board, temp_fixed_cards)
+    temp_fixed_cards_one = update_board(fixed_cards, card_one_row, card_one_column, True)
+    print_board(board, temp_fixed_cards_one)
+    card_two_row, card_two_column = select_card(board, temp_fixed_cards_one)
+    temp_fixed_cards_two = update_board(temp_fixed_cards_one, card_two_row, card_two_column, True)
+    print_board(board, temp_fixed_cards_two)
 
     logger.debug(f'card one: {card_one_row}, {card_one_column}\n'
                  f'card two: {card_two_row}, {card_two_column}')
-    card_one = board[card_one_row][card_one_column]
-    card_two = board[card_two_row][card_two_column]
+    card_one = board[card_one_row - 1][card_one_column - 1]
+    card_two = board[card_two_row - 1][card_two_column - 1]
     if card_one == card_two:
-        players[name]+=1
-        new_fixed_cards = update_board(temp_fixed_cards, card_two_row, card_two_column, True)
+        print('You got matching cards, it is your turn again!')
+        cur_points = players[cur_player_name]
+        new_players = update_player(players, cur_player_name, cur_points + 1)
+        return new_players, temp_fixed_cards_two, True
+        # return play_turn(board, new_fixed_cards, players, name)
     else:
-        new_fixed_cards = fixed_cards
-    return players, new_fixed_cards
+        print('Your turn is over!')
+        return players, fixed_cards, False
+
+
+def update_player(players, player_name, points):
+    return {player_name: points, **get_opponent_player(players, player_name)}
+
+
+def get_opponent_player(players, player_name):
+    return dict(filter(lambda x: x[0] != player_name, players.items()))
 
 
 def select_card(board, fixed_cards):
     row, column = get_board_inputs(
-        "Enter two integers (column/row) separated by a space: ",
+        "Enter two integers (row/column) separated by a space: ",
         lambda x:
         x.isdigit(),
         "Which card would you like to flip?"
@@ -81,7 +101,7 @@ def select_card(board, fixed_cards):
     elif column > len(board[0]) or column < 1:
         print('Invalid column, try again!')
         select_card(board, fixed_cards)
-    elif fixed_cards[row][column]:
+    elif fixed_cards[row - 1][column - 1]:
         print('That card is already matched, please pick another card!')
         select_card(board, fixed_cards)
     
@@ -98,8 +118,9 @@ def get_players():
         return get_players()
 
 
-def get_board_inputs(input_prompt, valid_func, prompt_question=None):
-    print(prompt_question)
+def get_board_inputs(input_prompt, valid_func, extra_prompt=None):
+    if extra_prompt:
+        print(extra_prompt)
     input_str = input(input_prompt)
     inputs = input_str.split()
     if len(inputs) == 2:
@@ -117,17 +138,21 @@ def get_board_inputs(input_prompt, valid_func, prompt_question=None):
         return get_board_inputs(input_prompt, valid_func)
 
 
-def print_player_info(name, points):
-    print(f'{name}: {points}')
+def print_players_info(players):
+    if not len(players):
+        return
+    player = players[0]
+    print(f'{player[0]}: {player[1]}')
+    print_players_info(players[1:])
 
 
-def print_row(row, num_columns, matched_row, row_num):
+def print_row(row, num_columns, fixed_row, row_num):
     if not len(row):
         return
     if len(row) == num_columns:
         print(f'{row_num:>2} |', end='')
-    print(f'{row[0] if matched_row[0] else "":>2}', end='|')
-    print_row(row[1:], num_columns, matched_row[1:], row_num)
+    print(f'{row[0] if fixed_row[0] else "":>2}', end='|')
+    print_row(row[1:], num_columns, fixed_row[1:], row_num)
 
 
 def print_lines(column, num_columns):
@@ -182,7 +207,7 @@ def generate_empty_board(rows: int, columns: int, board: list):
 
 def update_line(line: list, column: int, value: str):
     # column starts from 1, i.e. index + 1
-    first_half = line[:column]
+    first_half = line[:column - 1]
     second_half = line[column:len(line)]
     return first_half + [value] + second_half
 
@@ -219,6 +244,17 @@ def generate_game_board(rows, columns, total_columns, board, card_vals):
             total_columns,
             board,
             card_vals)
+
+
+def game_is_over(fixed_cards):
+    for row in fixed_cards:
+        if not all(row):
+            return False
+    return True
+
+
+def get_winner(players):
+    return max(players.items(), key = lambda p : players[p[0]])
 
 
 if __name__ == "__main__":
