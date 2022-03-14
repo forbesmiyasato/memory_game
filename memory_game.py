@@ -1,3 +1,20 @@
+# Run the memory game program with the python command using python 3.8.5.
+# For example: "python3 memory_game.py", "python memory_game.py".
+# Python 3.8.5 is the version I am using, so I am sure it should work.
+# I'm pretty sure any python 3 version would work as well,
+# but please use 3.8.5 if they don't.
+# This program only uses standard packages, so you shouldn't need to pip
+# install anything.
+
+# Some clarifications to avoid confusion:
+# A board is a 2D list with each element/cell indicating a card.
+# For consistency, board rows and cells will be accessed using row and column
+# as the index, e.g. board[row][column]. Rows and columns start from 1 as
+# opposed to typical indices that start at 0. Hence, you might see a lot of
+# row - 1 and column - 1, e.g. board[row - 1][column - 1] when retrieving a card.
+# Sorry for choosing to start at 1 instead of 0. There were some top down
+# recursions that confused me when starting from row - 1 and switching between
+# index from 0 and index from 1 confused me even more.
 
 import logging
 import random
@@ -21,21 +38,21 @@ def memory_game():
     # Next, generate the game board with (board cells / 2) matching cards.
     # that are randomly placed.
     # Finally, have the players take turns flipping cards until all cards
-    # are fixed (fixed cards are permanently flipped cards due to being matched 
+    # are fixed (fixed cards are permanently flipped cards due to being matched
     # as flipped cards could be temporarily flipped during the player's turn).
     board_rows, board_columns = get_board_inputs(
         "Enter two even integers from 2 to 10 separated by a space "
         "(row/column, e.g. 4 10): ",
-        lambda x: 
-        x.isdigit and 
-        int(x) > 0 and 
+        lambda x:
+        x.isdigit and
+        int(x) > 0 and
         int(x) <= 10 and
         int(x) % 2 == 0,
         "What are the dimensions of the board?"
     )
     player_one, player_two = get_players()
     empty_board = generate_empty_board(board_rows, board_columns, [])
-    shuffled_card_values = get_shuffled_card_values(board_rows, board_columns)
+    shuffled_card_values = get_shuffled_cards(board_rows, board_columns)
     game_board = generate_game_board(
         board_rows,
         board_columns,
@@ -77,7 +94,9 @@ def play_game(board, cur_player_name, players, fixed_cards):
         else:
             print(f'Game tied at {player_one_points} matches!')
         return
-    players, new_fixed_cards, matched = play_turn(board, fixed_cards, players, cur_player_name)
+    players, new_fixed_cards, matched = play_turn(
+        board, fixed_cards, players, cur_player_name
+    )
     if matched:
         play_game(board, cur_player_name, players, new_fixed_cards)
     else:
@@ -152,7 +171,7 @@ def select_card(board, fixed_cards):
     elif fixed_cards[row - 1][column - 1]:
         print('That card is already flipped, please pick another card!')
         return select_card(board, fixed_cards)
-    
+
     return row, column
 
 
@@ -160,8 +179,8 @@ def get_players():
     # This function gets the two player names.
     # The two players are prompted to enter names again if their names are
     # the same.
-    player_one = input(f"Enter the name of player one: ")
-    player_two = input(f"Enter the name of player two: ")
+    player_one = input("Enter the name of player one: ")
+    player_two = input("Enter the name of player two: ")
     if player_two != player_one:
         return player_one, player_two
     else:
@@ -185,7 +204,7 @@ def get_board_inputs(input_prompt, valid_func, extra_prompt=None):
             return int(row), int(column)
         else:
             print('Invalid inputs, try again!')
-            return get_board_inputs(input_prompt, valid_func)       
+            return get_board_inputs(input_prompt, valid_func)
     else:
         print('Invalid inputs, try again!')
         return get_board_inputs(input_prompt, valid_func)
@@ -201,6 +220,11 @@ def print_players_info(players):
 
 
 def print_row(row, num_columns, fixed_row, row_num):
+    # This function prints a row of the board onto the screen.
+    # It's iterating through the list recursively in a fashion more similar
+    # to the haskell list recursion (I think). I believe the performance isn't
+    # great since the python list is more like an array instead of a linked
+    # list. Hence, you'll see more index recursing further below in the code.
     if not len(row):
         return
     if len(row) == num_columns:
@@ -210,24 +234,34 @@ def print_row(row, num_columns, fixed_row, row_num):
 
 
 def print_lines(column, num_columns):
+    # This function prints a line based on the column numbers purely to make
+    # the printed board look nicer.
     if not column:
         return
     elif column == num_columns:
-        print(f'   |', end='')
+        print('   |', end='')
     print('--|', end='')
     print_lines(column - 1, num_columns)
 
 
 def print_column_nums(column, num_columns):
+    # This function prints a line of column numbers purely to make the printed
+    # board look better and to make the players see column numbers easier.
     if not column:
         return
     elif column == num_columns:
-        print(f'    ', end='')
+        print('    ', end='')
     print_column_nums(column - 1, num_columns)
     print(f'{column:>2} ', end='')
 
 
 def print_board(board, fixed_cards, index=0):
+    # This function prints the board onto the screen.
+    # It iterates through every row using recusion on index instead of a loop.
+    # Index has a default of 0, so we can print the entire board by default
+    # without adding a confusing third parameter of 0 or an additional wrapper
+    # function. You will see more default index parameters for other functions
+    # below, and they serve for the same purposes.
     if index == len(board):
         return
     row = board[index]
@@ -244,42 +278,61 @@ def print_board(board, fixed_cards, index=0):
     print_board(board, fixed_cards, index + 1)
 
 
-def generate_empty_line(columns: int, line: list):
+def generate_empty_row(columns, line):
+    # This function generates an empty line with column number of elements.
+    # An empty element is represented by a null/None value.
     if columns > 0:
-        return generate_empty_line(columns - 1, line + [None])
+        return generate_empty_row(columns - 1, line + [None])
     elif columns == 0:
         return line
 
 
-def generate_empty_board(rows: int, columns: int, board: list):
+def generate_empty_board(rows, columns, board):
+    # This function generates an empty board.
+    # An empty element is represented by a null/None value.
     if rows > 0:
         return generate_empty_board(
             rows - 1,
             columns,
-            board + [generate_empty_line(columns, [])]
+            board + [generate_empty_row(columns, [])]
         )
     elif rows == 0:
         return board
 
 
-def update_line(line: list, column: int, value: str):
-    # column starts from 1, i.e. index + 1
-    first_half = line[:column - 1]
-    second_half = line[column:len(line)]
+def update_row(row, column, value):
+    # This function updates the value of a row element at the given column by
+    # returning a new updated row.
+    # We construct the new row by putting the columns before
+    # the column to update, the updated element at the given column, and the
+    # columns after the column to update together. If the given column is
+    # at the start or end of the row, then the elements before or after
+    # respectively would be an empty list
+    first_half = row[:column - 1]
+    second_half = row[column:len(row)]
     return first_half + [value] + second_half
 
 
 def update_board(board: list, row: int, column: int, value):
-    # row and column starts from 1
+    # This function updates the value on the board at the given column and row
+    # by returning a new board.
+    # We construct the new board by putting the rows before the row to update,
+    # the updated row, and the rows after the row to update together.
+    # If the given row is at the start or end of the board, then the rows before
+    # or after respectively would be an empty list
     first_half = board[:row - 1]
     second_half = board[row:len(board)]
-    updated_row = update_line(board[row - 1], column, value)
+    updated_row = update_row(board[row - 1], column, value)
     return first_half + [updated_row] + second_half
 
 
-def get_shuffled_card_values(rows, columns):
-    # [x + 1 for x in range(int(rows * columns / 2))]
+def get_shuffled_cards(rows, columns):
+    # This function gets all the cards to be placed on the board in a
+    # random order.
     def generate_card_values_list(cur_value, max_card_value, cur_list=[]):
+        # This inner function generates a list of all possible card values
+        # It essentially does the snippet below recursively
+        # [x + 1 for x in range(int(rows * columns / 2))]
         if cur_value > max_card_value:
             return cur_list
         return generate_card_values_list(
@@ -294,6 +347,9 @@ def get_shuffled_card_values(rows, columns):
 
 
 def generate_game_board(rows, columns, total_columns, board, card_vals):
+    # This function generates the game board. It takes in a list of cards
+    # to be placed on the board, and then places them on the board one at a
+    # time recursively.
     if rows == 0:
         return board
     elif rows > 0 and columns > 0:
@@ -314,6 +370,8 @@ def generate_game_board(rows, columns, total_columns, board, card_vals):
 
 
 def game_is_over(fixed_cards, index=0):
+    # This function checks if the game is over recursively. The game is over if
+    # all the cards on the board are fixed.
     if index == len(fixed_cards):
         return True
     if not all(fixed_cards[index]):
