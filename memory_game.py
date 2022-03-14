@@ -6,6 +6,10 @@
 # This program only uses standard packages, so you shouldn't need to pip
 # install anything.
 
+# I attempted to implement functional programming into this program by using
+# no loops, no explicit state changes, functional methods such as map and
+# filter, lambdas and higher order functions.
+
 # Some clarifications to avoid confusion:
 # A board is a 2D list with each element/cell indicating a card.
 # For consistency, board rows and cells will be accessed using row and column
@@ -15,7 +19,6 @@
 # Sorry for choosing to start at 1 instead of 0. There were some top down
 # recursions that confused me when starting from row - 1 and switching between
 # index from 0 and index from 1 confused me even more.
-
 import logging
 import random
 
@@ -35,11 +38,12 @@ def memory_game():
     # First, get the board dimensions from the user. Board dimensions have to be
     # integers that are even and between 1 and 10 inclusively.
     # Then, get the player names.
-    # Next, generate the game board with (board cells / 2) matching cards.
-    # that are randomly placed.
+    # Next, generate the game board with (board cells / 2) matching cards that
+    # are randomly placed.
     # Finally, have the players take turns flipping cards until all cards
     # are fixed (fixed cards are permanently flipped cards due to being matched
-    # as flipped cards could be temporarily flipped during the player's turn).
+    # as opposed to flipped cards which could be temporarily flipped during
+    # the player's turn).
     board_rows, board_columns = get_board_inputs(
         "Enter two even integers from 2 to 10 separated by a space "
         "(row/column, e.g. 4 10): ",
@@ -144,7 +148,7 @@ def update_player(players, player_name, points):
 
 def get_opponent_player(players, player_name):
     # This function gets the opponent player key/value pair using the current
-    # player's name
+    # player's name.
     # The x in "lambda x" is a player name/point key value pair; filter
     # returns the player key value pair that matches the condition as a filter
     # object, so we have to convert the filter object back into a dict object
@@ -246,7 +250,7 @@ def print_lines(column, num_columns):
 
 def print_column_nums(column, num_columns):
     # This function prints a line of column numbers purely to make the printed
-    # board look better and to make the players see column numbers easier.
+    # board look better and to help the players see column numbers easier.
     if not column:
         return
     elif column == num_columns:
@@ -261,7 +265,7 @@ def print_board(board, fixed_cards, index=0):
     # Index has a default of 0, so we can print the entire board by default
     # without adding a confusing third parameter of 0 or an additional wrapper
     # function. You will see more default index parameters for other functions
-    # below, and they serve for the same purposes.
+    # below, and it serves for the same purposes.
     if index == len(board):
         return
     row = board[index]
@@ -313,7 +317,7 @@ def update_row(row, column, value):
     return first_half + [value] + second_half
 
 
-def update_board(board: list, row: int, column: int, value):
+def update_board(board, row, column, value):
     # This function updates the value on the board at the given column and row
     # by returning a new board.
     # We construct the new board by putting the rows before the row to update,
@@ -331,8 +335,6 @@ def get_shuffled_cards(rows, columns):
     # random order.
     def generate_card_values_list(cur_value, max_card_value, cur_list=[]):
         # This inner function generates a list of all possible card values
-        # It essentially does the snippet below recursively
-        # [x + 1 for x in range(int(rows * columns / 2))]
         if cur_value > max_card_value:
             return cur_list
         return generate_card_values_list(
