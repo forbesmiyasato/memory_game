@@ -1,18 +1,28 @@
 
 import logging
 import random
-import time
 
 logging.basicConfig()
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+# set to DEBUG for testing to see the board content
+logger.setLevel(logging.INFO)
 
 
 def main():
+    # Run the memory game
     memory_game()
 
 
 def memory_game():
+    # This function starts the memory game.
+    # First, get the board dimensions from the user. Board dimensions have to be
+    # integers that are even and between 1 and 10 inclusively.
+    # Then, get the player names.
+    # Next, generate the game board with (board cells / 2) matching cards.
+    # that are randomly placed.
+    # Finally, have the players take turns flipping cards until all cards
+    # are fixed (fixed cards are permanently flipped cards due to being matched 
+    # as flipped cards could be temporarily flipped during the player's turn).
     board_rows, board_columns = get_board_inputs(
         "Enter two even integers from 2 to 10 separated by a space "
         "(row/column, e.g. 4 10): ",
@@ -39,12 +49,22 @@ def memory_game():
 
 
 def play_game(board, cur_player_name, players, fixed_cards):
+    # This function handles the game play. I.e. players taking turns to flip
+    # cards until all cards are fixed. An updated board and player scores
+    # are printed at the beginning of every turn. When all cards are fixed,
+    # the game is considered over, and the player with more matches wins. If
+    # both players have the same number of matches then it is a tie.
+    # If there was a match during the turn, the player gets another turn until
+    # they fail to get a match.
+    # We can see the board when the logging level is set to DEBUG for testing.
     logger.debug(board)
     logger.debug(fixed_cards)
     print('\nName: Points')
     print_players_info(list(players.items()))
     print_board(board, fixed_cards)
-    opponent_player_name = list(get_opponent_player(players, cur_player_name).keys())[0]
+    opponent_player_name = list(
+        get_opponent_player(players, cur_player_name).keys()
+    )[0]
     if game_is_over(fixed_cards):
         player_one = cur_player_name
         player_two = opponent_player_name
@@ -65,12 +85,24 @@ def play_game(board, cur_player_name, players, fixed_cards):
 
 
 def play_turn(board, fixed_cards, players, cur_player_name):
+    # This function handles a player's turn.
+    # It prompts the player to select two cards and checks to make sure
+    # the two cards are valid.
+    # Once the player selects two valid cards, it checks if it is match.
+    # If it is a match, the player points are incremented, the matched
+    # cards are marked as fixed, and the game is signaled to let the current
+    # player have another turn. If it isn't a match, then the game state remains
+    # the same and the current player's turn ends.
     print(f'player {cur_player_name}, flip two cards that are facing down.')
     card_one_row, card_one_column = select_card(board, fixed_cards)
-    temp_fixed_cards_one = update_board(fixed_cards, card_one_row, card_one_column, True)
+    temp_fixed_cards_one = update_board(
+        fixed_cards, card_one_row, card_one_column, True
+    )
     print_board(board, temp_fixed_cards_one)
     card_two_row, card_two_column = select_card(board, temp_fixed_cards_one)
-    temp_fixed_cards_two = update_board(temp_fixed_cards_one, card_two_row, card_two_column, True)
+    temp_fixed_cards_two = update_board(
+        temp_fixed_cards_one, card_two_row, card_two_column, True
+    )
     print_board(board, temp_fixed_cards_two)
 
     card_one = board[card_one_row - 1][card_one_column - 1]
@@ -86,14 +118,25 @@ def play_turn(board, fixed_cards, players, cur_player_name):
 
 
 def update_player(players, player_name, points):
+    # This function updates the current player's point by returning a new
+    # players object
     return {player_name: points, **get_opponent_player(players, player_name)}
 
 
 def get_opponent_player(players, player_name):
+    # This function gets the opponent player key/value pair using the current
+    # player's name
+    # The x in "lambda x" is a player name/point key value pair; filter
+    # returns the player key value pair that matches the condition as a filter
+    # object, so we have to convert the filter object back into a dict object
     return dict(filter(lambda x: x[0] != player_name, players.items()))
 
 
 def select_card(board, fixed_cards):
+    # This function gets a card on the board from user input.
+    # The user is prompted to select a card until they select a valid card.
+    # A valid card is two integers (row/column) separated by a space that are
+    # not out of the board's boundaries and are not fixed/flipped.
     row, column = get_board_inputs(
         "Enter two integers (row/column) separated by a space: ",
         lambda x:
@@ -114,6 +157,9 @@ def select_card(board, fixed_cards):
 
 
 def get_players():
+    # This function gets the two player names.
+    # The two players are prompted to enter names again if their names are
+    # the same.
     player_one = input(f"Enter the name of player one: ")
     player_two = input(f"Enter the name of player two: ")
     if player_two != player_one:
@@ -124,6 +170,10 @@ def get_players():
 
 
 def get_board_inputs(input_prompt, valid_func, extra_prompt=None):
+    # This function gets board inputs from the player.
+    # Board inputs are always two integers (row/column), it could be the
+    # dimensions or a certain card/cell, we pass in a function
+    # that defines what is a valid integer input.
     if extra_prompt:
         print(extra_prompt)
     input_str = input(input_prompt)
@@ -142,6 +192,7 @@ def get_board_inputs(input_prompt, valid_func, extra_prompt=None):
 
 
 def print_players_info(players):
+    # This function prints the players' name and points.
     if not len(players):
         return
     player = players[0]
