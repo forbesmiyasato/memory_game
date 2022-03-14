@@ -80,7 +80,6 @@ def play_turn(board, fixed_cards, players, cur_player_name):
         cur_points = players[cur_player_name]
         new_players = update_player(players, cur_player_name, cur_points + 1)
         return new_players, temp_fixed_cards_two, True
-        # return play_turn(board, new_fixed_cards, players, name)
     else:
         print('Your turn is over, no matches!')
         return players, fixed_cards, False
@@ -103,13 +102,13 @@ def select_card(board, fixed_cards):
     )
     if row > len(board) or row < 1:
         print('Invalid row, try again!')
-        select_card(board, fixed_cards)
+        return select_card(board, fixed_cards)
     elif column > len(board[0]) or column < 1:
         print('Invalid column, try again!')
-        select_card(board, fixed_cards)
+        return select_card(board, fixed_cards)
     elif fixed_cards[row - 1][column - 1]:
         print('That card is already flipped, please pick another card!')
-        select_card(board, fixed_cards)
+        return select_card(board, fixed_cards)
     
     return row, column
 
