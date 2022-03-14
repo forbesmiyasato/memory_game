@@ -177,18 +177,21 @@ def print_column_nums(column, num_columns):
     print(f'{column:>2} ', end='')
 
 
-def print_board(board, fixed_cards):
-    for index, row in enumerate(board):
-        num_columns = len(row)
-        if index == 0:
-            print_column_nums(num_columns, num_columns)
-            print()
-            print_lines(num_columns, num_columns)
-            print()
-        print_row(row, num_columns, fixed_cards[index], index + 1)
+def print_board(board, fixed_cards, index=0):
+    if index == len(board):
+        return
+    row = board[index]
+    num_columns = len(row)
+    if index == 0:
+        print_column_nums(num_columns, num_columns)
         print()
         print_lines(num_columns, num_columns)
         print()
+    print_row(row, num_columns, fixed_cards[index], index + 1)
+    print()
+    print_lines(num_columns, num_columns)
+    print()
+    print_board(board, fixed_cards, index + 1)
 
 
 def generate_empty_line(columns: int, line: list):
@@ -225,7 +228,17 @@ def update_board(board: list, row: int, column: int, value):
 
 
 def get_shuffled_card_values(rows, columns):
-    card_vals = [x + 1 for x in range(int(rows * columns / 2))]
+    # [x + 1 for x in range(int(rows * columns / 2))]
+    def generate_card_values_list(cur_value, max_card_value, cur_list=[]):
+        if cur_value > max_card_value:
+            return cur_list
+        return generate_card_values_list(
+            cur_value + 1,
+            max_card_value,
+            cur_list + [cur_value]
+        )
+
+    card_vals = generate_card_values_list(1, int(rows * columns / 2))
     card_vals = card_vals + card_vals
     return sorted(card_vals, key=lambda k: random.random())
 
@@ -250,11 +263,12 @@ def generate_game_board(rows, columns, total_columns, board, card_vals):
             card_vals)
 
 
-def game_is_over(fixed_cards):
-    for row in fixed_cards:
-        if not all(row):
-            return False
-    return True
+def game_is_over(fixed_cards, index=0):
+    if index == len(fixed_cards):
+        return True
+    if not all(fixed_cards[index]):
+        return False
+    return game_is_over(fixed_cards, index + 1)
 
 
 if __name__ == "__main__":
